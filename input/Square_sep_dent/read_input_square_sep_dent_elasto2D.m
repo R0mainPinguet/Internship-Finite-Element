@@ -1,27 +1,7 @@
-
-%= Hauteur, largeur de la zone d'étude, et géométrie du tissu mou =%
-H = 1.5;
-L = 0.9;
-h = 0.36;
-W = h;
-
-geo = [H L];
-%==%
-
-%= Onde incidente =%
-omega = 1;              % Pulsation
-k_p_1 = 31.6228 / 5810; % Nombre d'ondes
-U_I   = 1;              % Amplitude de l'onde P incidente
-
-onde_incidente = [omega;
-                  k_p_1;
-                  U_I];
-%==%
-
 if ~(exist("mshfile")==1)
     
     %=== Default input file ===%
-    mshfile='Square_sep_dent_4.msh';
+    mshfile='Square_sep_dent_1.msh';
     %==========================%
    
     disp("Loading default file !");
@@ -49,16 +29,16 @@ analysis.scheme = 1;
 %=== MATERIAUX : Lambda, mu et rho ===%
 if ~(exist("material")==1)
 
-    % material = [235  42900 4.42;    % Implant
-    %             2.25 1     1;       % Tissu Mou
-    %             41.6 5990  1.85];   % Os
+    material = [235  42.9  4.42;    % Implant
+                2.25 0.001 1   ;    % Tissu Mou
+                41.6 5.99  1.85];   % Os
 
-    material = [1 1 1;1 1 1;1 1 1]; 
+    % material = [1 1 0;1 1 0;1 1 0]; 
 
     disp("Loading default materials !");
-    disp("Material 1 (Implant) : lambda = "+num2str(material(1,1))+" GPa ; mu = "+num2str(material(1,2)) +" MPa ; rho = " + num2str(material(1,3))+" tonnes/m^3");
-    disp("Material 2 (Tissu mou) : lambda = "+num2str(material(2,1))+" GPa ; mu = "+num2str(material(2,2)) +" MPa ; rho = " + num2str(material(2,3))+" tonnes/m^3");
-    disp("Material 3 (Os) : lambda = "+num2str(material(3,1))+" GPa ; mu = "+num2str(material(3,2)) +" MPa ; rho = " + num2str(material(3,3))+" tonnes/m^3");
+    disp("Material 1 (Implant) : lambda = "+num2str(material(1,1))+" GPa ; mu = "+num2str(material(1,2)) +" GPa ; rho = " + num2str(material(1,3))+" tonnes/m^3");
+    disp("Material 2 (Tissu mou) : lambda = "+num2str(material(2,1))+" GPa ; mu = "+num2str(material(2,2)) +" GPa ; rho = " + num2str(material(2,3))+" tonnes/m^3");
+    disp("Material 3 (Os) : lambda = "+num2str(material(3,1))+" GPa ; mu = "+num2str(material(3,2)) +" GPa ; rho = " + num2str(material(3,3))+" tonnes/m^3");
     disp("#####");
 end
 %==========================%
@@ -78,7 +58,10 @@ solid = [1 1;
 if ~(exist("uex")==1)
     
     % Default u exact
-    uex = "Trigo_temporel";
+    % uex = "Poly4_dent";
+    uex = "Expo_complexe_freq";
+    % uex = "Trigo_temporel";
+    % uex = "Gaussienne_temporel";
     
     disp("Loading default solution !");
     disp(uex);
@@ -106,18 +89,73 @@ if uex=="Poly4_dent"
     cbc = [11 1 3 "(l2-l1)*((L-2*x)*(H*H/4-y*y)+(x*L-x*x)*(-2*y))*[1 0;0 1] + 2*(m2-m1)*[(L-2*x)*(H*H/4-y*y) (L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y);(L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y) (x*L-x*x)*(-2*y)]";
            12 1 2 "(l2-l1)*((L-2*x)*(H*H/4-y*y)+(x*L-x*x)*(-2*y))*[1 0;0 1] + 2*(m2-m1)*[(L-2*x)*(H*H/4-y*y) (L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y);(L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y) (x*L-x*x)*(-2*y)]";
            13 2 3 "(l2-l1)*((L-2*x)*(H*H/4-y*y)+(x*L-x*x)*(-2*y))*[1 0;0 1] + 2*(m2-m1)*[(L-2*x)*(H*H/4-y*y) (L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y);(L/2-x)*(H*H/4-y*y)+(x*L-x*x)*(-y) (x*L-x*x)*(-2*y)]"];
-
-elseif uex=="Dent_inconnue"
-
-    % dbc = [4 1 "0" ; 4 2 "0";
-    %        5 1 "0" ; 5 2 "0";
-    %        6 1 "0" ; 6 2 "0";
-    %        7 1 "0" ; 7 2 "U_I*exp(j * k_p_1 * y)";
-    %        8 1 "0" ; 8 2 "U_I*exp(j * k_p_1 * H/2)";
-    %        9 1 "0" ; 9 2 "U_I*exp(j * k_p_1 * y)";
-    %        10 1 "0";10 2 "0"];
     
+elseif uex=="Expo_complexe_freq"
+    
+    % % Dirichlet Boundary Condition : Physical Set // Direction // Value
+    % dbc = [4 1 "0" ; 4 2 "0";
+    %        5 1 "0" ;
+    %        6 1 "0" ;
+    %        7 1 "0" ;
+    %        8 1 "0" ; 8 2 "U_I*exp(1j * k_p_1 * y)";
+    %        9 1 "0" ;
+    %        10 1 "0"];
+
+    % % Traction Boundary Condition : Physical Set // Direction // Value // Material
+    % tbc = [5  2 "0" 3;
+    %        6  2 "0" 2;
+    %        7  2 "0" 1;
+    %        9  2 "0" 1;
+    %        10 2 "0" 3];
+
+    % % Continuous Boundary Condition : Physical Set // Left Material // Right Material // Value of the continuity jump // Value of the traction jump // Master material
+    % cbc = [11 1 3 "0" "0" 1;
+    %        12 1 2 "0" "0" 1;
+    %        13 2 3 "0" "0" 2];
+    
+    % Dirichlet Boundary Condition : Physical Set // Direction // Value
+    dbc = [4 1 "0" ; 4 2 "0";
+           5 1 "0" ;
+           6 1 "0" ;
+           7 1 "0" ;
+           8 1 "0" ; 8 2 "0";
+           9 1 "0" ;
+           10 1 "0"];
+
+    % Traction Boundary Condition : Physical Set // Direction // Value // Material
+    tbc = [5  2 "0" 3;
+           6  2 "0" 2;
+           7  2 "0" 1;
+           9  2 "0" 1;
+           10 2 "0" 3];
+
+    % Continuous Boundary Condition : Physical Set // Left Material // Right Material // Value of the continuity jump // Value of the traction jump // Master material
+    % A l'interface, u^R = u^2 - u^I
+    %                \sigma^R u^R = \sigma^2 u^2 - \sigma^I u^I
+    cbc = [11 1 3 "-[0;U_I*exp(1j * k_p_1 * y)]" "[2j*k_p_1*mu*U_I*exp(1j*k_p_1*y) 0;0 1j*k_p_1*(lambda+mu)*U_I*exp(1j*k_p_1*y)]" 1;
+           12 1 2 "-[0;U_I*exp(1j * k_p_1 * y)]" "[2j*k_p_1*mu*U_I*exp(1j*k_p_1*y) 0;0 1j*k_p_1*(lambda+mu)*U_I*exp(1j*k_p_1*y)]" 1;
+           13 2 3 "0" "0" 2];
+    
+    
+elseif uex=="Trigo_temporel"
+
     % Dirichlet Boundary Condition
+    dbc = [4 1 "0" ; 4 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           5 1 "0" ; 5 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           6 1 "0" ; 6 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           7 1 "0" ; 7 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           8 1 "0" ; 8 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           9 1 "0" ; 9 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)";
+           10 1 "0";10 2 "U_ex(x,y,t,geo,onde_incidente,dir,uex)"];
+
+    % Continuité de la traction
+    cbc = [11 1 3 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]";
+           12 1 2 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]";
+           13 2 3 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]"];
+
+
+elseif uex=="Gaussienne_temporel"
+
     dbc = [4 1 "0" ; 4 2 "0";
            5 1 "0" ; 5 2 "0";
            6 1 "0" ; 6 2 "0";
@@ -125,28 +163,10 @@ elseif uex=="Dent_inconnue"
            8 1 "0" ; 8 2 "0";
            9 1 "0" ; 9 2 "0";
            10 1 "0";10 2 "0"];
-    
-    % Continuité de la traction
+
     cbc = [11 1 3 "0";
            12 1 2 "0";
-           13 2 3 "0"];           
-
-elseif uex=="Trigo_temporel"
-
-    % Dirichlet Boundary Condition
-    dbc = [4 1 "0" ; 4 2 "sin(t)*sin(y)/(y-3H/2)";
-           5 1 "0" ; 5 2 "sin(t)*sin(y)/(y-3H/2)";
-           6 1 "0" ; 6 2 "sin(t)*sin(y)/(y-3H/2)";
-           7 1 "0" ; 7 2 "sin(t)*sin(y)/(y-3H/2)";
-           8 1 "0" ; 8 2 "sin(t)*sin(y)/(y-3H/2)";
-           9 1 "0" ; 9 2 "sin(t)*sin(y)/(y-3H/2)";
-           10 1 "0";10 2 "sin(t)*sin(y)/(y-3H/2)"];
-
-    % Continuité de la traction
-    cbc = [11 1 3 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]";
-           12 1 2 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]";
-           13 2 3 "( sin(t)*( cos(y)*(y-3*H/2) - sin(y) )/( (y-3*H/2)^2 )*[l2-l1 0;0 l2-l1+2*(m2-m1)]"];           
-
+           13 2 3 "0"];
     
 end
 
@@ -187,3 +207,23 @@ if ~(exist("quadrature_B2")==1)
     disp("######");    
 end
 
+
+
+%= Hauteur, largeur de la zone d'étude, et géométrie du tissu mou =%
+H = 1.5;
+L = 0.9;
+h = 0.36;
+W = h;
+
+geo = [H L];
+%==%
+
+
+%= Onde incidente =%
+omega = 1;                                                                  % Pulsation
+k_p_1 = omega / sqrt( (material(1,1)+2*material(1,2)) / material(1,3) );          % Nombre d'ondes
+U_I   = 1;                                                                  % Amplitude de l'onde P incidente
+ldo   = H/4;                                                                % Longueur d'onde
+
+onde_incidente = [omega k_p_1 U_I ldo];
+%==%
