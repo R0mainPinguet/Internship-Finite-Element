@@ -34,7 +34,8 @@ fseek(fmid, position, 'bof');
 
 nodes=repmat(struct('coor',[],...  % allocates the list nodes
                     'dof',[],...
-                    'U',[]),1,maxnodenum);
+                    'U',[],...
+                    'boundary_condition',[]),1,maxnodenum);
 
 for i=1:NN,                         % loop to read the nodes
     
@@ -45,7 +46,8 @@ for i=1:NN,                         % loop to read the nodes
     nodes(h(1)).coor=h(2:1+DG);        % saves coordinates
 
     nodes(h(1)).dof = zeros(1,ndof);
-    
+
+    nodes(h(1)).boundary_condition = string(zeros(1,ndof));
     nodes(h(1)).U = zeros(1,ndof);
     
 end
@@ -137,6 +139,16 @@ for i=1:num
 
                 x = nodes(h(n)).coor(1);
                 y = nodes(h(n)).coor(2);
+
+                t = 0;
+
+                H = geo(1);
+                L = geo(2);
+
+                omega = onde_incidente(1);
+                k_p_1 = onde_incidente(2);
+                U_I = onde_incidente(3);
+                ldo = onde_incidente(4);
                 
                 % pos(iL) = index of the dbc elements who has the physet
                 % dbc(pos(iL),2) = Direction of the condition
@@ -146,8 +158,8 @@ for i=1:num
                 
                 nodes(h(n)).dof( dir ) = -1;
                 
-                nodes(h(n)).U(dir) = eval(dbc(pos(iL),3));
-                
+                nodes(h(n)).boundary_condition(dir) = dbc(pos(iL),3);
+                nodes(h(n)).U(dir) = eval(nodes(h(n)).boundary_condition(dir));
             end
         end
     end
@@ -170,7 +182,9 @@ frontiere = repmat(struct('type',0,...
                           'nodes',[],...
                           'left_material',0,...
                           'right_material',0,...
-                          'jump_function'," "),1,NC);
+                          'jump_func'," ",...
+                          'jump_func_traction'," ",...
+                          'master_material',0),1,NC);
 
 disp("Elements per physical set");
 disp(epps);
@@ -225,7 +239,10 @@ for i=1:num,
         frontiere(NC).left_material = str2num(cbc(pos,2));
         frontiere(NC).right_material = str2num(cbc(pos,3));
         
-        frontiere(NC).jump_function = cbc(pos,4);
+        frontiere(NC).jump_func = cbc(pos,4);
+        frontiere(NC).jump_func_traction = cbc(pos,5);
+
+        frontiere(NC).master_material = str2num(cbc(pos,6));
         
     end
 end
